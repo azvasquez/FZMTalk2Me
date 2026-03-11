@@ -122,6 +122,22 @@ html, body {
 .vn-nameplate.lunie { color: var(--accent);     background: rgba(192, 132, 252, 0.07); }
 .vn-nameplate.you   { color: var(--user-color); background: rgba(244, 114, 182, 0.06); }
 
+/* ─── Narrator / action box ──────────────────────────────── */
+
+#vn-speaking.narrator {
+  background: rgba(8, 5, 20, 0.60);
+}
+#vn-speaking.narrator .vn-nameplate {
+  display: none;
+}
+#vn-speaking.narrator #vn-text {
+  font-style: italic;
+  color: rgba(220, 200, 255, 0.72);
+  font-size: 15px;
+  text-align: center;
+  padding: 0 16px;
+}
+
 /* ─── Dialogue text ──────────────────────────────────────── */
 
 #vn-dialogue {

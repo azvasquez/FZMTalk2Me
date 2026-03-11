@@ -5,8 +5,14 @@ import { MODEL_PATH } from './config.js';
 // Required: pixi-live2d-display reads PIXI from the global scope.
 window.PIXI = PIXI;
 
-let app = null;
+let app   = null;
 let model = null;
+
+// Home state — saved after fitModel() so we can animate back to it
+let home  = null;  // { x, y, scaleX, scaleY }
+
+// Active animation frame handle
+let animFrame = null;
 
 /**
  * Initialize PixiJS and load the Live2D model onto the given canvas.
@@ -56,6 +62,9 @@ function fitModel() {
   // Horizontally centered; bottom of model sits at the top of the VN panel
   model.x = (window.innerWidth - model.width) / 2;
   model.y = availH - model.height + model.height * 0.04;
+
+  // Save as home state for camera animations to reference
+  home = { x: model.x, y: model.y, scaleX: model.scale.x, scaleY: model.scale.y };
 }
 
 /**
@@ -126,4 +135,99 @@ export function resetMood() {
   if (!model) return;
   try { model.expression(MOOD_EXPRESSION.neutral); } catch { /* no-op */ }
   try { model.motion('Idle', 0); } catch { /* no-op */ }
+}
+
+// ─── Camera & visual direction ────────────────────────────────
+
+function easeInOut(t) {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
+
+/**
+ * Animate model properties from their current values to targets.
+ * Supports: x, y, scaleX, scaleY, alpha
+ */
+function animateTo(targets, duration, onDone) {
+  if (!model) { onDone?.(); return; }
+  if (animFrame) cancelAnimationFrame(animFrame);
+
+  const start = performance.now();
+  const from  = {
+    x:      model.x,
+    y:      model.y,
+    scaleX: model.scale.x,
+    scaleY: model.scale.y,
+    alpha:  model.alpha,
+  };
+
+  function tick(now) {
+    const t = easeInOut(Math.min(1, (now - start) / duration));
+    for (const [key, to] of Object.entries(targets)) {
+      const val = from[key] + (to - from[key]) * t;
+      if (key === 'scaleX') model.scale.x = val;
+      else if (key === 'scaleY') model.scale.y = val;
+      else model[key] = val;
+    }
+    if (t < 1) {
+      animFrame = requestAnimationFrame(tick);
+    } else {
+      animFrame = null;
+      onDone?.();
+    }
+  }
+  animFrame = requestAnimationFrame(tick);
+}
+
+/**
+ * Apply a camera directive from the AI.
+ * @param {'face'|'full'|null} cam
+ * @param {'left'|'right'|null} fade
+ * @param {boolean} show
+ * @param {boolean} hide
+ */
+export function applyCameraDirective({ cam, fade, show, hide }) {
+  if (!model || !home) return;
+
+  if (hide) {
+    animateTo({ alpha: 0 }, 500);
+    return;
+  }
+  if (show) {
+    animateTo({ alpha: 1 }, 500);
+    return;
+  }
+
+  if (fade) {
+    // Slide off one side, snap to other side, slide back in
+    const dir    = fade === 'left' ? -1 : 1;
+    const slideX = window.innerWidth * 0.35 * dir;
+    animateTo({ x: home.x + slideX, alpha: 0 }, 420, () => {
+      model.x     = home.x - slideX;
+      model.alpha = 0;
+      animateTo({ x: home.x, alpha: 1 }, 420);
+    });
+    return;
+  }
+
+  if (cam === 'face') {
+    const panelH = Math.min(220, Math.max(155, window.innerHeight * 0.26));
+    const availH = window.innerHeight - panelH;
+    const Z      = 1.75;
+
+    const newScaleX = home.scaleX * Z;
+    const newScaleY = home.scaleY * Z;
+    const newW      = model.internalModel.width  * newScaleX;
+    const newH      = model.internalModel.height * newScaleY;
+
+    // Center the face region (approx top 20% of model) in the available viewport
+    const targetX = window.innerWidth / 2 - newW / 2;
+    const targetY = availH * 0.42 - newH * 0.20;
+
+    animateTo({ x: targetX, y: targetY, scaleX: newScaleX, scaleY: newScaleY }, 650);
+    return;
+  }
+
+  if (cam === 'full') {
+    animateTo({ x: home.x, y: home.y, scaleX: home.scaleX, scaleY: home.scaleY, alpha: 1 }, 650);
+  }
 }

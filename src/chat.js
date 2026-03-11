@@ -16,15 +16,6 @@ function getClaudeClient() {
 /** Full conversation history sent to the model on every turn. */
 const history = [];
 
-function parseMood(raw) {
-  const trimmed = raw.trim();
-  // Accept [mood:happy] (Claude style) or [happy] (Mistral style)
-  const match = trimmed.match(/^\[(?:mood:)?(\w+)\]\s*/i);
-  const mood  = match ? match[1].toLowerCase() : 'neutral';
-  const reply = match ? trimmed.slice(match[0].length).trim() : trimmed;
-  if (match) console.debug('[mood]', mood);
-  return { mood, reply };
-}
 
 async function sendClaude(userText) {
   const response = await getClaudeClient().messages.create({
@@ -71,12 +62,11 @@ export async function sendMessage(userText) {
     ? await sendOllama(userText)
     : await sendClaude(userText);
 
-  const { mood, reply } = parseMood(raw);
+  // Strip any leading tags before storing in history so they don't accumulate
+  const clean = raw.trim().replace(/^(\[[^\]]+\]\s*)+/i, '').trim();
+  history.push({ role: 'assistant', content: clean });
 
-  // Store clean text so the mood tag doesn't bleed into future context
-  history.push({ role: 'assistant', content: reply });
-
-  return { reply, mood, historyIdx: history.length - 1 };
+  return { raw, historyIdx: history.length - 1 };
 }
 
 /** Clear conversation history (start fresh). */

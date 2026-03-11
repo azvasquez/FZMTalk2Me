@@ -23,6 +23,7 @@ const MAX_DISPLAY_MS = 6500;
 const TYPEWRITER_MS  = 26;   // ms per character
 
 function readingDelay(text) {
+  if (!text) return MIN_DISPLAY_MS;
   return Math.min(MAX_DISPLAY_MS, Math.max(MIN_DISPLAY_MS, text.split(/\s+/).length * MS_PER_WORD));
 }
 
@@ -34,11 +35,10 @@ let autoTimerFireAt = 0;   // absolute timestamp when autoTimer will fire
 let typeTimer       = null;
 let jumpCb          = null;
 
-// ─── Sentence splitting ───────────────────────────────────────
-
+// splitIntoChunks kept for legacy callers; new code uses parser.js segments
 export function splitIntoChunks(text) {
   const parts = text.split(/(?<=[.!?])\s+(?=[A-Z"'\u{1F000}-\u{1FFFF}])/u);
-  return parts.map(s => s.trim()).filter(Boolean);
+  return parts.map(s => s.trim()).filter(Boolean).map(t => ({ type: 'dialogue', text: t }));
 }
 
 // ─── Panel state switching ────────────────────────────────────
@@ -55,6 +55,7 @@ function showState(state) {
 
 function typewrite(text, onComplete) {
   clearInterval(typeTimer);
+  if (!text) { onComplete?.(); return; }
   vnText.textContent = '';
   vnCursor.classList.remove('hidden');
   let i = 0;
@@ -73,7 +74,7 @@ function skipTypewriter() {
   if (!typeTimer) return;
   clearInterval(typeTimer);
   typeTimer = null;
-  vnText.textContent = chunks[chunkIndex];
+  vnText.textContent = chunks[chunkIndex].text;
   vnCursor.classList.add('hidden');
   onChunkTyped();
 }
@@ -108,7 +109,7 @@ function onChunkTyped() {
 
   if (!isLast) {
     vnAdvance.classList.remove('hidden');
-    const delay = readingDelay(chunks[chunkIndex]);
+    const delay = readingDelay(chunks[chunkIndex].text);
     autoTimerFireAt = Date.now() + delay;
     autoTimer = setTimeout(() => {
       vnAdvance.classList.add('hidden');
@@ -117,7 +118,7 @@ function onChunkTyped() {
     }, delay);
   } else {
     // Last chunk — wait, then switch to listening
-    const delay = readingDelay(chunks[chunkIndex]);
+    const delay = readingDelay(chunks[chunkIndex].text);
     autoTimerFireAt = Date.now() + delay;
     autoTimer = setTimeout(showListening, delay);
   }
@@ -125,17 +126,28 @@ function onChunkTyped() {
 
 function renderChunk() {
   clearTimeout(autoTimer);
-  vnName.textContent = CHARACTER_NAME;
-  vnAdvance.classList.add('hidden');
   showState('speaking');
-  typewrite(chunks[chunkIndex], onChunkTyped);
+  vnAdvance.classList.add('hidden');
+
+  const segment = chunks[chunkIndex];
+  if (!segment || !segment.text) { showListening(); return; }
+  const isAction = segment.type === 'action';
+
+  // Toggle narrator styling
+  vnSpeaking.classList.toggle('narrator', isAction);
+  vnName.textContent = isAction ? '' : CHARACTER_NAME;
+
+  typewrite(segment.text, onChunkTyped);
 }
 
-/** Begin VN-style autoplay through a list of sentence chunks. */
-export function showSpeaking(chunkList) {
+/**
+ * Begin VN-style autoplay through a segment list.
+ * Each segment is { type: 'action'|'dialogue', text: string }
+ */
+export function showSpeaking(segmentList) {
   clearTimeout(autoTimer);
   clearInterval(typeTimer);
-  chunks     = chunkList.length ? chunkList : ['...'];
+  chunks     = segmentList.length ? segmentList : [{ type: 'dialogue', text: '...' }];
   chunkIndex = 0;
   renderChunk();
 }
