@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FZMTalk2Me</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" />
+  <link rel="stylesheet" href="/src/style.css" />
+  <!--
+    SETUP STEP 1: Download the Cubism 4 Core from Live2D's website.
+    https://www.live2d.com/en/sdk/download/web/
+    Extract the zip and copy CubismSdkForWeb/Core/live2dcubismcore.min.js
+    into public/core/ in this project folder.
+  -->
+  <script src="/core/live2dcubismcore.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <canvas id="live2d-canvas"></canvas>
+
+    <div id="speech-bubble" class="hidden" aria-live="polite">
+      <div id="speech-bubble-text"></div>
+    </div>
+
+    <div id="chatbox">
+      <div id="chat-log" role="log"></div>
+      <div id="chat-input-row">
+        <textarea
+          id="chat-input"
+          placeholder="Take your time... Ctrl+Enter to send when you're ready."
+          rows="2"
+          autofocus
+        ></textarea>
+        <button id="send-btn" title="Send (Ctrl+Enter)">Send →</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

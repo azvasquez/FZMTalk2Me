@@ -1,0 +1,13 @@
+Place your Live2D model folder here.
+
+Free moe/bishoujo models to get started:
+  • Live2D official samples (Hiyori, Natori, etc.)
+      https://www.live2d.com/en/learn/sample/
+  • Booth.pm — search "live2d free model"
+      https://booth.pm/en/browse/Live2D
+  • nizima.com — curated marketplace, has free section
+      https://nizima.com
+
+After adding a model, update MODEL_PATH in src/config.js.
+Example:
+  export const MODEL_PATH = '/models/Hiyori/Hiyori.model3.json';
