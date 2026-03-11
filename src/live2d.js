@@ -49,21 +49,22 @@ export async function initLive2D(canvasEl) {
 function fitModel() {
   if (!model || !app) return;
 
-  // Available height = viewport minus the VN panel (clamped same as CSS)
-  const panelH   = Math.min(220, Math.max(155, window.innerHeight * 0.26));
-  const availH   = window.innerHeight - panelH;
+  const vW = window.innerWidth;
+  const vH = window.innerHeight;
 
-  const targetW  = window.innerWidth * 0.7;
-  const targetH  = availH * 0.97;
-  const scale    = Math.min(targetW / model.internalModel.width, targetH / model.internalModel.height);
+  // Show the top VISIBLE portion of the model (head → thighs); feet crop below viewport.
+  // Matches DDLC-style framing: character fills the screen, dialogue box floats over.
+  const VISIBLE  = 0.67;   // fraction of model height shown (thighs-up)
+  const scaleByH = (vH * 0.97) / (model.internalModel.height * VISIBLE);
+  const scaleByW = (vW * 0.82) / model.internalModel.width;
+  const scale    = Math.min(scaleByH, scaleByW);
 
   model.scale.set(scale);
 
-  // Horizontally centered; bottom of model sits at the top of the VN panel
-  model.x = (window.innerWidth - model.width) / 2;
-  model.y = availH - model.height + model.height * 0.04;
+  // Center horizontally; anchor so thighs land at the bottom of the viewport
+  model.x = (vW - model.width) / 2;
+  model.y = vH - model.height * VISIBLE;
 
-  // Save as home state for camera animations to reference
   home = { x: model.x, y: model.y, scaleX: model.scale.x, scaleY: model.scale.y };
 }
 
@@ -210,18 +211,16 @@ export function applyCameraDirective({ cam, fade, show, hide }) {
   }
 
   if (cam === 'face') {
-    const panelH = Math.min(220, Math.max(155, window.innerHeight * 0.26));
-    const availH = window.innerHeight - panelH;
-    const Z      = 1.75;
+    const Z = 1.6;
 
     const newScaleX = home.scaleX * Z;
     const newScaleY = home.scaleY * Z;
     const newW      = model.internalModel.width  * newScaleX;
     const newH      = model.internalModel.height * newScaleY;
 
-    // Center the face region (approx top 20% of model) in the available viewport
-    const targetX = window.innerWidth / 2 - newW / 2;
-    const targetY = availH * 0.42 - newH * 0.20;
+    // Center on the face region (roughly top 18% of model) in the viewport
+    const targetX = window.innerWidth  / 2 - newW / 2;
+    const targetY = window.innerHeight * 0.38 - newH * 0.18;
 
     animateTo({ x: targetX, y: targetY, scaleX: newScaleX, scaleY: newScaleY }, 650);
     return;

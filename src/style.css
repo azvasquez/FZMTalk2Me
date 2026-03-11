@@ -81,22 +81,25 @@ html, body {
 
 #vn-panel {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 26vh;
-  min-height: 155px;
-  max-height: 220px;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(620px, 92vw);
+  height: 24vh;
+  min-height: 140px;
+  max-height: 205px;
   z-index: 10;
+  overflow: hidden;
 
-  background: var(--surface);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
+  background: rgba(6, 3, 16, 0.68);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 
-  /* Top glow border */
-  border-top: 1px solid rgba(192, 132, 252, 0.4);
+  border-radius: 18px;
+  border: 1px solid rgba(192, 132, 252, 0.20);
   box-shadow:
-    0 -12px 48px rgba(100, 40, 200, 0.2),
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    0 4px 20px rgba(100, 40, 200, 0.20),
     inset 0 1px 0 rgba(192, 132, 252, 0.08);
 }
 
@@ -119,13 +122,13 @@ html, body {
   text-transform: uppercase;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
-.vn-nameplate.lunie { color: var(--accent);     background: rgba(192, 132, 252, 0.07); }
-.vn-nameplate.you   { color: var(--user-color); background: rgba(244, 114, 182, 0.06); }
+.vn-nameplate.lunie { color: var(--accent);     background: rgba(192, 132, 252, 0.05); }
+.vn-nameplate.you   { color: var(--user-color); background: rgba(244, 114, 182, 0.04); }
 
 /* ─── Narrator / action box ──────────────────────────────── */
 
 #vn-speaking.narrator {
-  background: rgba(8, 5, 20, 0.60);
+  background: rgba(6, 3, 16, 0.45);
 }
 #vn-speaking.narrator .vn-nameplate {
   display: none;
