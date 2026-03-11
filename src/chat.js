@@ -76,10 +76,18 @@ export async function sendMessage(userText) {
   // Store clean text so the mood tag doesn't bleed into future context
   history.push({ role: 'assistant', content: reply });
 
-  return { reply, mood };
+  return { reply, mood, historyIdx: history.length - 1 };
 }
 
 /** Clear conversation history (start fresh). */
 export function resetHistory() {
   history.length = 0;
+}
+
+/**
+ * Truncate history to just after the given index.
+ * Used for log "rewind" — lets the user branch from any past point.
+ */
+export function jumpToHistory(idx) {
+  history.length = idx + 1;
 }

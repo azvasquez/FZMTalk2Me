@@ -43,16 +43,19 @@ export async function initLive2D(canvasEl) {
 function fitModel() {
   if (!model || !app) return;
 
-  // Scale model so it occupies ~65% of viewport width, up to 95% of viewport height.
-  const targetW = window.innerWidth * 0.65;
-  const targetH = window.innerHeight * 0.95;
-  const scale = Math.min(targetW / model.internalModel.width, targetH / model.internalModel.height);
+  // Available height = viewport minus the VN panel (clamped same as CSS)
+  const panelH   = Math.min(220, Math.max(155, window.innerHeight * 0.26));
+  const availH   = window.innerHeight - panelH;
+
+  const targetW  = window.innerWidth * 0.7;
+  const targetH  = availH * 0.97;
+  const scale    = Math.min(targetW / model.internalModel.width, targetH / model.internalModel.height);
 
   model.scale.set(scale);
 
-  // Horizontally centered, slightly above viewport bottom so chatbox doesn't fully cover feet.
+  // Horizontally centered; bottom of model sits at the top of the VN panel
   model.x = (window.innerWidth - model.width) / 2;
-  model.y = window.innerHeight - model.height + model.height * 0.05;
+  model.y = availH - model.height + model.height * 0.04;
 }
 
 /**

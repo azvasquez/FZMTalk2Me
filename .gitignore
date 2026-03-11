@@ -2,3 +2,10 @@ node_modules/
 dist/
 .env
 *.local
+
+# Claude Code local settings
+.claude/
+
+# Live2D model files — download separately from live2d.com
+public/models/*/
+public/core/live2dcubismcore.min.js

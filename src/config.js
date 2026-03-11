@@ -18,6 +18,10 @@ export const OLLAMA_BASE_URL = 'http://localhost:11434';
 // API key goes in .env as VITE_ANTHROPIC_API_KEY
 export const CLAUDE_MODEL = 'claude-sonnet-4-6';
 
+// Background image path (relative to /public). Leave empty for default gradient.
+// Example: '/backgrounds/my-room.jpg'
+export const BACKGROUND_PATH = '';
+
 // Path to your Live2D model's .model3.json file (relative to /public).
 //
 // SETUP STEP 2: Get a free model:

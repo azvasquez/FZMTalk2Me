@@ -7,37 +7,58 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" />
   <link rel="stylesheet" href="/src/style.css" />
-  <!--
-    SETUP STEP 1: Download the Cubism 4 Core from Live2D's website.
-    https://www.live2d.com/en/sdk/download/web/
-    Extract the zip and copy CubismSdkForWeb/Core/live2dcubismcore.min.js
-    into public/core/ in this project folder.
-  -->
   <script src="/core/live2dcubismcore.min.js"></script>
 </head>
 <body>
   <div id="app">
+
+    <!-- Scene background (image or default gradient) -->
+    <div id="background"></div>
+
+    <!-- Live2D avatar -->
     <canvas id="live2d-canvas"></canvas>
 
-    <div id="speech-bubble" class="hidden" aria-live="polite">
-      <div id="speech-bubble-text"></div>
-      <div id="bubble-more">▼</div>
-    </div>
+    <!-- Log button -->
+    <button id="log-toggle" title="Conversation Log">Log</button>
 
-    <div id="chatbox">
-      <div id="chat-log" role="log"></div>
-      <div id="chat-input-row">
-        <textarea
-          id="chat-input"
-          placeholder="Take your time... Ctrl+Enter to send when you're ready."
-          rows="2"
-          autofocus
-        ></textarea>
-        <button id="send-btn" title="Send (Ctrl+Enter)">Send →</button>
+    <!-- ── VN bottom panel ─────────────────────────────── -->
+    <div id="vn-panel">
+
+      <!-- Speaking: Lunie is talking -->
+      <div id="vn-speaking" class="vn-state hidden">
+        <div class="vn-nameplate lunie" id="vn-name"></div>
+        <div id="vn-dialogue">
+          <span id="vn-text"></span><span id="vn-cursor" class="hidden">▌</span>
+        </div>
+        <div id="vn-advance" class="hidden">▼</div>
       </div>
-    </div>
-  </div>
 
+      <!-- Listening: user's turn -->
+      <div id="vn-listening" class="vn-state hidden">
+        <div class="vn-nameplate you">You</div>
+        <div id="vn-input-row">
+          <textarea id="chat-input" placeholder="Take your time... Ctrl+Enter to send." rows="2"></textarea>
+          <button id="send-btn" title="Send (Ctrl+Enter)">Send →</button>
+        </div>
+      </div>
+
+      <!-- Waiting: API call in flight -->
+      <div id="vn-waiting" class="vn-state hidden">
+        <div id="vn-dots"><span></span><span></span><span></span></div>
+      </div>
+
+    </div>
+
+    <!-- ── Log panel (slides in from right) ───────────── -->
+    <div id="log-panel">
+      <div id="log-header">
+        <span>Conversation Log</span>
+        <button id="log-close">✕</button>
+      </div>
+      <div id="log-entries"></div>
+    </div>
+
+  </div>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
