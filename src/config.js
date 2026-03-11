@@ -6,6 +6,18 @@
 // Display name shown in the chat log
 export const CHARACTER_NAME = 'Lunie';
 
+// ─── AI Provider ──────────────────────────────────────────────
+// Switch between 'claude' and 'ollama' here.
+export const PROVIDER = 'ollama';
+
+// Ollama settings (only used when PROVIDER = 'ollama')
+export const OLLAMA_MODEL    = 'mistral';   // run: ollama pull llama3.2
+export const OLLAMA_BASE_URL = 'http://localhost:11434';
+
+// Claude settings (only used when PROVIDER = 'claude')
+// API key goes in .env as VITE_ANTHROPIC_API_KEY
+export const CLAUDE_MODEL = 'claude-sonnet-4-6';
+
 // Path to your Live2D model's .model3.json file (relative to /public).
 //
 // SETUP STEP 2: Get a free model:
@@ -38,4 +50,18 @@ Your personality:
 
 The user may be ADHD or an ENTP type who thinks out loud and often sends thoughts mid-formation. Meet them where they are. Unfinished thoughts are fine. Respond to the spirit of what they mean, not just the literal words.
 
-Never use voice-chat framing. Everything is text. Keep it cozy.`;
+Never use voice-chat framing. Everything is text. Keep it cozy.
+
+IMPORTANT — start every reply with a mood tag on its own line, like this:
+[mood:happy]
+Then your actual response below it. Choose the mood that best fits your reply:
+- neutral   → calm, informational, default
+- happy     → warm, pleased, friendly
+- excited   → enthusiastic, sparkling, fangirling
+- sad       → empathetic, gentle, a little down
+- surprised → caught off guard, "wait what?!"
+- blush     → embarrassed, flattered, flustered
+- shy       → soft, quiet, a little hesitant
+- angry     → frustrated, indignant (use sparingly)
+
+Only output the tag + response. No explanation of the tag.`;

@@ -55,25 +55,72 @@ function fitModel() {
   model.y = window.innerHeight - model.height + model.height * 0.05;
 }
 
+/**
+ * Returns the model's screen-space bounds so the speech bubble can
+ * anchor itself just above the model's top edge regardless of window size.
+ */
+export function getModelBounds() {
+  if (!model) return null;
+  return {
+    top:    model.y,                          // px from top of viewport
+    left:   model.x + model.width / 2,        // horizontal center of model
+    width:  model.width,
+  };
+}
+
 function onResize() {
   if (!app) return;
   app.renderer.resize(window.innerWidth, window.innerHeight);
   fitModel();
 }
 
-/**
- * Trigger a named expression (e.g. 'happy', 'surprised').
- * Silently ignored if the model doesn't have that expression.
- */
-export function setExpression(name) {
-  if (!model) return;
-  try { model.expression(name); } catch { /* model may not have this expression */ }
+// Maps mood names → expression index in the model's expression list.
+// Verified against mao_pro.model3.json expressions array order (0-based).
+const MOOD_EXPRESSION = {
+  neutral:   0, // exp_01 — calm default
+  happy:     1, // exp_02 — closed-eye smile
+  shy:       2, // exp_03 — sleepy/soft
+  excited:   3, // exp_04 — wide eyes + sparkle ✨
+  sad:       4, // exp_05 — pouty mouth down
+  blush:     5, // exp_06 — red cheeks
+  surprised: 6, // exp_07 — wide eyes, "o" mouth
+  angry:     7, // exp_08 — angry brows + mouth
+};
+
+// Motion groups in the model (unnamed group = '').
+// Indices 0-2: normal reactions; 3-5: specials.
+const MOOD_MOTION = {
+  neutral:   [0, 1, 2],   // any of mtn_02/03/04
+  happy:     [0, 1],
+  shy:       [0],
+  excited:   [3, 4, 5],   // special motions
+  sad:       [1],
+  blush:     [0, 1],
+  surprised: [2, 3],
+  angry:     [2],
+};
+
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 /**
- * Trigger a named motion group (e.g. 'idle', 'tap_body').
+ * Trigger a mood by name — sets the matching expression and a body motion.
+ * Falls back to neutral for unknown moods.
  */
-export function setMotion(group) {
+export function applyMood(mood) {
   if (!model) return;
-  try { model.motion(group); } catch { /* model may not have this motion */ }
+
+  const exprIdx  = MOOD_EXPRESSION[mood] ?? MOOD_EXPRESSION.neutral;
+  const motionIdx = pick(MOOD_MOTION[mood] ?? MOOD_MOTION.neutral);
+
+  try { model.expression(exprIdx); }  catch { /* no-op */ }
+  try { model.motion('', motionIdx, 2 /* NORMAL priority */); } catch { /* no-op */ }
+}
+
+/** Return to idle state. */
+export function resetMood() {
+  if (!model) return;
+  try { model.expression(MOOD_EXPRESSION.neutral); } catch { /* no-op */ }
+  try { model.motion('Idle', 0); } catch { /* no-op */ }
 }

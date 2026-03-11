@@ -1,8 +1,9 @@
 import './style.css';
-import { initLive2D, setMotion } from './live2d.js';
+import { initLive2D, applyMood, resetMood, getModelBounds } from './live2d.js';
 import { sendMessage } from './chat.js';
 import {
   showBubble,
+  splitIntoChunks,
   appendMessage,
   appendSystemNote,
   setLoading,
@@ -37,10 +38,13 @@ onSend(async () => {
   setLoading(true);
 
   try {
-    const reply = await sendMessage(text);
+    const { reply, mood } = await sendMessage(text);
     appendMessage('assistant', reply);
-    showBubble(reply);
-    setMotion('tap_body'); // trigger a reaction motion if the model supports it
+    showBubble(splitIntoChunks(reply), getModelBounds());
+    applyMood(mood);
+    // Return to idle after the bubble auto-hides
+    const resetDelay = Math.max(5000, reply.split(/\s+/).length * 250);
+    setTimeout(resetMood, resetDelay + 500);
   } catch (err) {
     const msg = err?.status === 401
       ? 'Invalid API key — check your .env file.'

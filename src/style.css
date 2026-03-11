@@ -58,7 +58,7 @@ body::before {
 
 #speech-bubble {
   position: fixed;
-  bottom: 56%;
+  bottom: 56%; /* fallback when no model is loaded */
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
@@ -78,6 +78,21 @@ body::before {
     0 0 0 2px var(--bubble-shadow);
 
   pointer-events: none;
+}
+
+/* VN-style "more coming" indicator */
+#bubble-more {
+  text-align: right;
+  font-size: 10px;
+  color: var(--accent);
+  margin-top: 6px;
+  animation: morepulse 1s ease-in-out infinite;
+}
+#bubble-more.hidden { display: none; }
+
+@keyframes morepulse {
+  0%, 100% { opacity: 0.3; transform: translateY(0); }
+  50%       { opacity: 1;   transform: translateY(2px); }
 }
 
 /* Triangle tail pointing down toward avatar */
