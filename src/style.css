@@ -39,6 +39,7 @@ html, body {
     linear-gradient(180deg, #060414 0%, #0e0825 55%, #090618 100%);
   background-size: cover;
   background-position: center;
+  will-change: transform;
 }
 
 /* ─── Canvas ─────────────────────────────────────────────── */

@@ -58,8 +58,9 @@ onSend(async () => {
     const { raw, historyIdx } = await sendMessage(text);
     const { tags, segments }  = parseResponse(raw);
     const fullText            = segments.map(s => s.text).join(' ');
+    const logText             = segments.filter(s => s.type === 'dialogue').map(s => s.text).join(' ');
 
-    appendLogEntry('assistant', fullText, historyIdx);
+    appendLogEntry('assistant', logText, historyIdx);
     applyDirectives(tags);
     showSpeaking(segments);
 

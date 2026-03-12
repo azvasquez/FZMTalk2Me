@@ -7,6 +7,7 @@ window.PIXI = PIXI;
 
 let app   = null;
 let model = null;
+const bgEl = document.getElementById('background');
 
 // Home state — saved after fitModel() so we can animate back to it
 let home  = null;  // { x, y, scaleX, scaleY }
@@ -179,6 +180,19 @@ function animateTo(targets, duration, onDone) {
   animFrame = requestAnimationFrame(tick);
 }
 
+// ─── Background coupling ──────────────────────────────────────
+
+/**
+ * Animate the CSS background element to match camera moves.
+ * Uses CSS transitions so it stays in sync without RAF overhead.
+ */
+function bgTransform(transform, duration, transformOrigin = '50% 50%') {
+  if (!bgEl) return;
+  bgEl.style.transition      = `transform ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+  bgEl.style.transformOrigin = transformOrigin;
+  bgEl.style.transform       = transform;
+}
+
 /**
  * Apply a camera directive from the AI.
  * @param {'face'|'full'|null} cam
@@ -199,12 +213,15 @@ export function applyCameraDirective({ cam, fade, show, hide }) {
   }
 
   if (fade) {
-    // Slide off one side, snap to other side, slide back in
+    // Slide model off one side, snap to other, slide back in
     const dir    = fade === 'left' ? -1 : 1;
     const slideX = window.innerWidth * 0.35 * dir;
+    // Background drifts subtly in the same direction then resets
+    bgTransform(`translateX(${dir * 3}%)`, 420);
     animateTo({ x: home.x + slideX, alpha: 0 }, 420, () => {
       model.x     = home.x - slideX;
       model.alpha = 0;
+      bgTransform('translateX(0)', 420);
       animateTo({ x: home.x, alpha: 1 }, 420);
     });
     return;
@@ -222,11 +239,14 @@ export function applyCameraDirective({ cam, fade, show, hide }) {
     const targetX = window.innerWidth  / 2 - newW / 2;
     const targetY = window.innerHeight * 0.38 - newH * 0.18;
 
+    // Background zooms toward the face region (upper center of screen)
+    bgTransform('scale(1.18) translateY(-3%)', 650, '50% 22%');
     animateTo({ x: targetX, y: targetY, scaleX: newScaleX, scaleY: newScaleY }, 650);
     return;
   }
 
   if (cam === 'full') {
+    bgTransform('scale(1) translateY(0)', 650, '50% 50%');
     animateTo({ x: home.x, y: home.y, scaleX: home.scaleX, scaleY: home.scaleY, alpha: 1 }, 650);
   }
 }

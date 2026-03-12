@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { SYSTEM_PROMPT, PROVIDER, OLLAMA_MODEL, OLLAMA_BASE_URL, CLAUDE_MODEL } from './config.js';
+import { SYSTEM_PROMPT, CHARACTER_ANCHOR, PROVIDER, OLLAMA_MODEL, OLLAMA_BASE_URL, CLAUDE_MODEL } from './config.js';
 
 // Claude client (constructed lazily — not used when PROVIDER = 'ollama')
 let _claudeClient = null;
@@ -16,13 +16,29 @@ function getClaudeClient() {
 /** Full conversation history sent to the model on every turn. */
 const history = [];
 
+// Inject a character anchor every N history entries to combat context drift.
+// Lower = more frequent reminders; higher = less cache-busting overhead for local models.
+const ANCHOR_EVERY = 16;
+
+function buildMessages() {
+  if (history.length < ANCHOR_EVERY) return history;
+  const result = [];
+  for (let i = 0; i < history.length; i++) {
+    if (i > 0 && i % ANCHOR_EVERY === 0) {
+      result.push({ role: 'system', content: CHARACTER_ANCHOR });
+    }
+    result.push(history[i]);
+  }
+  return result;
+}
+
 
 async function sendClaude(userText) {
   const response = await getClaudeClient().messages.create({
     model: CLAUDE_MODEL,
     max_tokens: 600,
     system: SYSTEM_PROMPT,
-    messages: history,
+    messages: buildMessages(),
   });
   return response.content[0].text;
 }
@@ -34,9 +50,10 @@ async function sendOllama(userText) {
     body: JSON.stringify({
       model: OLLAMA_MODEL,
       stream: false,
+      options: { num_predict: 350 },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
-        ...history,
+        ...buildMessages(),
       ],
     }),
   });
@@ -62,8 +79,11 @@ export async function sendMessage(userText) {
     ? await sendOllama(userText)
     : await sendClaude(userText);
 
-  // Strip any leading tags before storing in history so they don't accumulate
-  const clean = raw.trim().replace(/^(\[[^\]]+\]\s*)+/i, '').trim();
+  // Strip leading tags and action blocks before storing — model sees clean dialogue only
+  const clean = raw.trim()
+    .replace(/^(\[[^\]]+\]\s*)+/i, '')
+    .replace(/\*[^*\n]+\*/g, '')
+    .trim();
   history.push({ role: 'assistant', content: clean });
 
   return { raw, historyIdx: history.length - 1 };

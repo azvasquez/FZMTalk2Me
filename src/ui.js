@@ -1,4 +1,5 @@
 import { CHARACTER_NAME } from './config.js';
+import { speak, stopSpeaking } from './tts.js';
 
 // ─── DOM refs ─────────────────────────────────────────────────
 const vnSpeaking  = document.getElementById('vn-speaking');
@@ -74,6 +75,7 @@ function skipTypewriter() {
   if (!typeTimer) return;
   clearInterval(typeTimer);
   typeTimer = null;
+  stopSpeaking();
   vnText.textContent = chunks[chunkIndex].text;
   vnCursor.classList.add('hidden');
   onChunkTyped();
@@ -82,6 +84,7 @@ function skipTypewriter() {
 function advanceNow() {
   clearTimeout(autoTimer);
   autoTimer = null;
+  stopSpeaking();
   vnAdvance.classList.add('hidden');
   const isLast = chunkIndex === chunks.length - 1;
   if (!isLast) {
@@ -117,7 +120,6 @@ function onChunkTyped() {
       renderChunk();
     }, delay);
   } else {
-    // Last chunk — wait, then switch to listening
     const delay = readingDelay(chunks[chunkIndex].text);
     autoTimerFireAt = Date.now() + delay;
     autoTimer = setTimeout(showListening, delay);
@@ -137,6 +139,7 @@ function renderChunk() {
   vnSpeaking.classList.toggle('narrator', isAction);
   vnName.textContent = isAction ? '' : CHARACTER_NAME;
 
+  if (!isAction) speak(segment.text);
   typewrite(segment.text, onChunkTyped);
 }
 
@@ -156,6 +159,7 @@ export function showSpeaking(segmentList) {
 export function showListening() {
   clearTimeout(autoTimer);
   clearInterval(typeTimer);
+  stopSpeaking();
   showState('listening');
   setTimeout(() => chatInput.focus(), 40);
 }
@@ -164,6 +168,7 @@ export function showListening() {
 export function showWaiting() {
   clearTimeout(autoTimer);
   clearInterval(typeTimer);
+  stopSpeaking();
   showState('waiting');
 }
 
