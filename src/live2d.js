@@ -12,6 +12,9 @@ const bgEl = document.getElementById('background');
 // Home state — saved after fitModel() so we can animate back to it
 let home  = null;  // { x, y, scaleX, scaleY }
 
+// Manual pan/zoom applied on top of home position
+let panX = 0, panY = 0, zoomMul = 1;
+
 // Active animation frame handle
 let animFrame = null;
 
@@ -34,6 +37,7 @@ export async function initLive2D(canvasEl) {
     model = await Live2DModel.from(MODEL_PATH, { autoInteract: false });
     app.stage.addChild(model);
     fitModel();
+    initManualControls(canvasEl);
     window.addEventListener('resize', onResize);
     console.info('[Live2D] Model loaded:', MODEL_PATH);
     return true;
@@ -67,6 +71,86 @@ function fitModel() {
   model.y = vH - model.height * VISIBLE;
 
   home = { x: model.x, y: model.y, scaleX: model.scale.x, scaleY: model.scale.y };
+
+  // Reset manual transform on fit (e.g. window resize)
+  panX = 0; panY = 0; zoomMul = 1;
+}
+
+/**
+ * Swap out the current model for a new one at the given path.
+ * Returns true on success, false on failure (keeps old model if load fails).
+ */
+export async function switchModel(path) {
+  if (!app) return false;
+  if (model) {
+    app.stage.removeChild(model);
+    model.destroy();
+    model = null;
+  }
+  try {
+    model = await Live2DModel.from(path, { autoInteract: false });
+    app.stage.addChild(model);
+    fitModel();
+    console.info('[Live2D] Switched to model:', path);
+    return true;
+  } catch (err) {
+    console.warn('[Live2D] Failed to load model:', path, err);
+    return false;
+  }
+}
+
+// ─── Manual pan / zoom ────────────────────────────────────────
+
+function applyManualTransform() {
+  if (!model || !home) return;
+  model.x       = home.x + panX;
+  model.y       = home.y + panY;
+  model.scale.x = home.scaleX * zoomMul;
+  model.scale.y = home.scaleY * zoomMul;
+}
+
+/** Reset pan and zoom back to the fitted home position. */
+export function resetView() {
+  panX = 0; panY = 0; zoomMul = 1;
+  applyManualTransform();
+}
+
+/** Multiply current zoom by factor (called by +/- buttons). */
+export function zoomBy(factor) {
+  zoomMul = Math.max(0.2, Math.min(5, zoomMul * factor));
+  applyManualTransform();
+}
+
+function initManualControls(canvasEl) {
+  let dragging = false, startX = 0, startY = 0, startPanX = 0, startPanY = 0;
+
+  canvasEl.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 0.92 : 1.08;
+    zoomMul = Math.max(0.2, Math.min(5, zoomMul * factor));
+    applyManualTransform();
+  }, { passive: false });
+
+  canvasEl.addEventListener('mousedown', (e) => {
+    dragging  = true;
+    startX    = e.clientX;
+    startY    = e.clientY;
+    startPanX = panX;
+    startPanY = panY;
+    canvasEl.style.cursor = 'grabbing';
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    panX = startPanX + (e.clientX - startX);
+    panY = startPanY + (e.clientY - startY);
+    applyManualTransform();
+  });
+
+  window.addEventListener('mouseup', () => {
+    dragging = false;
+    canvasEl.style.cursor = '';
+  });
 }
 
 /**

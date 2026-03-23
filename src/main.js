@@ -1,5 +1,5 @@
 import './style.css';
-import { initLive2D, applyMood, resetMood, applyCameraDirective } from './live2d.js';
+import { initLive2D, applyMood, resetMood, applyCameraDirective, resetView, zoomBy, switchModel } from './live2d.js';
 import { sendMessage, jumpToHistory } from './chat.js';
 import { parseResponse } from './parser.js';
 import {
@@ -13,7 +13,7 @@ import {
   getInputText,
   clearInput,
 } from './ui.js';
-import { CHARACTER_NAME, BACKGROUND_PATH } from './config.js';
+import { CHARACTER_NAME, BACKGROUND_PATH, MODEL_PATH, modelPaths } from './config.js';
 
 // ─── Background ───────────────────────────────────────────────
 if (BACKGROUND_PATH) {
@@ -28,6 +28,27 @@ const canvas = document.getElementById('live2d-canvas');
 initLive2D(canvas).then((loaded) => {
   if (!loaded) appendSystemNote('Avatar not loaded — check MODEL_PATH in src/config.js');
 });
+
+// ─── Model selector ───────────────────────────────────────────
+const modelSelect = document.getElementById('model-select');
+for (const [name, path] of Object.entries(modelPaths)) {
+  const opt = document.createElement('option');
+  opt.value = path;
+  opt.textContent = name;
+  if (path === MODEL_PATH) opt.selected = true;
+  modelSelect.appendChild(opt);
+}
+modelSelect.addEventListener('change', async () => {
+  modelSelect.disabled = true;
+  const ok = await switchModel(modelSelect.value);
+  if (!ok) appendSystemNote('Failed to load model — check the path in config.js');
+  modelSelect.disabled = false;
+});
+
+// ─── View controls ────────────────────────────────────────────
+document.getElementById('zoom-in').addEventListener('click',    () => zoomBy(1.15));
+document.getElementById('zoom-out').addEventListener('click',   () => zoomBy(0.87));
+document.getElementById('reset-view').addEventListener('click', () => resetView());
 
 // ─── Welcome ──────────────────────────────────────────────────
 applyMood('happy');
