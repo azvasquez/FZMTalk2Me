@@ -14,6 +14,8 @@ import {
   clearInput,
 } from './ui.js';
 import { CHARACTER_NAME, BACKGROUND_PATH, MODEL_PATH, modelPaths } from './config.js';
+import { startListening, stopListening, isListening } from './microphone.js';
+import { initBubbles, addBubble, popFirst } from './pendingBubbles.js';
 
 // ─── Background ───────────────────────────────────────────────
 if (BACKGROUND_PATH) {
@@ -49,6 +51,79 @@ modelSelect.addEventListener('change', async () => {
 document.getElementById('zoom-in').addEventListener('click',    () => zoomBy(1.15));
 document.getElementById('zoom-out').addEventListener('click',   () => zoomBy(0.87));
 document.getElementById('reset-view').addEventListener('click', () => resetView());
+
+// ─── Pending bubbles ──────────────────────────────────────────
+initBubbles(document.getElementById('pending-bubbles'), (bubble) => {
+  const logText = bubble.segments.filter(s => s.type === 'dialogue').map(s => s.text).join(' ');
+  appendLogEntry('user',      bubble.userText, -1);
+  appendLogEntry('assistant', logText, bubble.historyIdx);
+  applyDirectives(bubble.tags);
+  showSpeaking(bubble.segments);
+});
+
+// ─── Microphone ───────────────────────────────────────────────
+const micBtn = document.getElementById('mic-toggle');
+
+const TRIGGER_PHRASES = [
+  'you have something to say',
+  'do you have something to say',
+  'what were you going to say',
+  'what did you want to say',
+  'you were saying',
+];
+
+let transcriptBuffer = '';
+let transcriptTimer  = null;
+
+function onTranscript({ text, isFinal }) {
+  if (!isFinal) return;
+
+  // Trigger phrase: auto-play first pending bubble
+  if (TRIGGER_PHRASES.some(p => text.toLowerCase().includes(p))) {
+    const b = popFirst();
+    if (b) {
+      const logText = b.segments.filter(s => s.type === 'dialogue').map(s => s.text).join(' ');
+      appendLogEntry('user',      text, -1);
+      appendLogEntry('assistant', logText, b.historyIdx);
+      applyDirectives(b.tags);
+      showSpeaking(b.segments);
+    }
+    return;
+  }
+
+  // Accumulate and debounce — send to AI after 1.5s of silence
+  transcriptBuffer += (transcriptBuffer ? ' ' : '') + text;
+  clearTimeout(transcriptTimer);
+  transcriptTimer = setTimeout(async () => {
+    const utterance  = transcriptBuffer.trim();
+    transcriptBuffer = '';
+    if (!utterance) return;
+    try {
+      const { raw, historyIdx } = await sendMessage(utterance);
+      const { tags, segments }  = parseResponse(raw);
+      addBubble({ segments, tags, userText: utterance, historyIdx });
+    } catch (err) {
+      console.warn('[mic] AI error:', err.message);
+    }
+  }, 1500);
+}
+
+micBtn.addEventListener('click', () => {
+  if (isListening()) {
+    stopListening();
+    micBtn.classList.remove('active');
+    micBtn.title = 'Start microphone';
+  } else {
+    const ok = startListening({
+      onTranscript,
+      onError: (err) => appendSystemNote(`Mic error: ${err}`),
+    });
+    if (ok) {
+      micBtn.classList.add('active');
+      micBtn.title = 'Stop microphone';
+    }
+  }
+});
 
 // ─── Welcome ──────────────────────────────────────────────────
 applyMood('happy');
